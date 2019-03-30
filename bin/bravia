@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+
+function usage {
+    echo "usage: bravia [<options>] [command]"
+}
+
+function help {
+    usage
+    echo "
+Utility for controlling a Bravia TV via REST
+https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
+Based on https://github.com/alanreid/bravia
+
+Options:
+
+    -h, --help                      Show this help text
+    -l, --list                      List commands"
+}
+
+expandedArgs=()
+while test $# != 0
+do
+    arg="$1"
+    if [[ "$arg" =~ ^-[a-z]{2,}$ ]]; then
+        for (( i=1; i<${#arg}; i++ )); do
+            expandedArgs+=("-${arg:$i:1}")
+        done
+    else
+        expandedArgs+=("$arg")
+    fi
+    shift
+done
+
+cd "$(dirname "${BASH_SOURCE[0]}")/../libexec/bravia"
+
+# Commands: https://pro-bravia.sony.net/develop/integrate/ircc-ip/ircc-codes/index.html
+command=""
+for (( i=0; i<${#expandedArgs[@]}; i++ )); do
+    arg=${expandedArgs[$i]}
+    case "$arg" in
+    -h|--help)
+        help
+        exit 0
+        ;;
+    -l|--list)
+        ./list
+        exit 0
+        ;;
+    *)
+        list=$(./list) # Ensure list is read
+        command=$(./list | egrep -m1 "^$arg *\=" | sed -E "s/[^=]+\= *//")
+        ;;
+    esac
+done
+
+source access
+
+# https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
+
+function executeCommand {
+    echo "execute $1"
+    curl "$ip/sony/ircc" \
+        --header 'SOAPACTION: "urn:schemas-sony-com:service:IRCC:1#X_SendIRCC"' \
+        --cookie "$cookie" \
+        --silent \
+        --fail \
+        --data '
+            <s:Envelope
+                xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"
+                s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+                <s:Body>
+                    <u:X_SendIRCC xmlns:u="urn:schemas-sony-com:service:IRCC:1">
+                        <IRCCCode>'"$1"'</IRCCCode>
+                    </u:X_SendIRCC>
+                </s:Body>
+            </s:Envelope>' >/dev/null \
+            || { echo 'Could not execute command' ; exit 1; }
+}
+
+if [ -n "$command" ]; then
+    executeCommand "$command"
+    exit 0
+fi
+
+
+list=$(./list) # Ensure list is read
+echo "loading commands..."
+home=$(./list | egrep -m1 "^home *\=" | sed -E "s/[^=]+\= *//")
+enter=$(./list | egrep -m1 "^dpadCenter *\=" | sed -E "s/[^=]+\= *//")
+exit=$(./list | egrep -m1 "^exit *\=" | sed -E "s/[^=]+\= *//")
+up=$(./list | egrep -m1 "^up *\=" | sed -E "s/[^=]+\= *//")
+down=$(./list | egrep -m1 "^down *\=" | sed -E "s/[^=]+\= *//")
+left=$(./list | egrep -m1 "^left *\=" | sed -E "s/[^=]+\= *//")
+right=$(./list | egrep -m1 "^right *\=" | sed -E "s/[^=]+\= *//")
+echo "done"
+
+function readKey {
+  allInput=""
+  while :; do
+    read -rsn1 input
+    if [[ $input == $'\e' ]]; then
+      read -rsn1 -t 0.001 input2 # get 1 more character
+      input+="$input2"
+    fi
+    if [[ -z "$input" ]]; then
+      echo enter
+      return
+    elif [[ ! -n "$allInput" && $input =~ [a-zA-Z0-9] ]]; then
+      echo $input
+      return
+    fi
+    allInput+=$input
+    case $allInput in
+      *[A) echo up; return ;;
+      *[B) echo down; return ;;
+      *[D) echo left; return ;;
+      *[C) echo right; return ;;
+      *[2~) echo insert; return ;;
+      *[1~) echo home; return ;;
+      *[5~) echo pgup; return ;;
+      *[3~) echo delete; return ;;
+      *[4~) echo end; return ;;
+      *[6~) echo pgdn; return ;;
+      *$'\e') echo esc; return ;;
+    esac
+  done
+}
+
+echo "Interactive mode. Press 'Q' to exit"
+
+while :; do
+    key=$(readKey)
+    case $key in
+        q) exit;;
+        home) executeCommand $home ;;
+        enter) executeCommand $enter ;;
+        esc) executeCommand $exit ;;
+        up) executeCommand $up ;;
+        down) executeCommand $down ;;
+        left) executeCommand $left ;;
+        right) executeCommand $right ;;
+        up) executeCommand $up ;;
+    esac
+done

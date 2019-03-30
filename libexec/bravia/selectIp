@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$0")"
+
+gateway=$(ipconfig | grep "Default Gateway" | egrep -o "([0-9]{1,3}\.){3}[0-9]{1,3}")
+ips=($(arp -a | grep dynamic | egrep -o "([0-9]{1,3}\.){3}[0-9]{1,3}" | egrep -v "^$gateway$"))
+
+echo Gateway: $gateway
+echo Possible IPs
+
+function jsonString {
+  egrep -o -m1 '"'"$1"'" *: *"[^"]*"' | egrep -o -m1 '"[^"]*"$' | egrep -o -m1 '[^"]*'
+}
+
+# index=0
+for index in "${!ips[@]}"; do
+  ip="${ips[$index]}"
+  echo -n "$index: $ip"
+
+  # https://pro-bravia.sony.net/develop/integrate/rest-api/spec/service/system/v1_0/getInterfaceInformation/index.html
+  data=$(curl --silent "$ip/sony/system" \
+    --data '{
+        "method": "getInterfaceInformation",
+        "id": 33,
+        "params": [],
+        "version": "1.0"
+    }')
+  echo -n " "$(echo "$data" | jsonString productName)
+  echo " "$(echo "$data" | jsonString modelName)
+done
+
+echo -n "Select: "
+read selectedIndex
+selected="${ips[$selectedIndex]}"
+echo -n $selected > .ip

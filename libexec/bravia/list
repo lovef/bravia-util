@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+propertiesFile=commands.properties
+if [[ -f $propertiesFile ]]; then
+    cat $propertiesFile
+else
+    echo "Listing commands for the first time, this might take a while ..." >&2
+    echo "Result will be cached" >&2
+
+    source setup
+
+    jsonCommands=$(curl "$ip/sony/system" --silent --data "{
+        'id': 20,
+        'method': 'getRemoteControllerInfo',
+        'version': '1.0',
+        'params': []
+        }" | tr '{' '\n' | grep name | grep value)
+    properties=""
+    for command in $jsonCommands; do
+        name=$(echo -n $command | jsonString name)
+        value=$(echo -n $command | jsonString value)
+        property=$(echo "${name,} = $value")
+        echo $property
+        properties+="$property\n"
+    done
+
+    echo resolve aliases ...
+    aliasRegex="([a-zA-Z][a-zA-Z0-9]*) *\= *([a-zA-Z][a-zA-Z0-9]*)"
+    resolvedAliases=""
+    aliases=($(cat alias.properties | egrep "$aliasRegex"))
+
+    while read aliasRow; do
+        echo "$aliasRow"
+        if [[ $aliasRow =~ $aliasRegex ]]; then
+            name=${BASH_REMATCH[1]}
+            commandName=${BASH_REMATCH[2]}
+            propPattern="$commandName *= *([^[:space:]\n]+)"
+            if [[ $properties =~ $propPattern ]]; then
+                resolved="$name = ${BASH_REMATCH[1]}"
+                echo "$resolved"
+                resolvedAliases+="$resolved\n"
+            else
+                echo "Found no such command: $commandName"
+            fi
+        fi
+    done < alias.properties
+
+    if [[ ! -z $resolvedAliases ]]; then
+        echo -e "# Resolved aliases:\n$resolvedAliases\n# Commands:\n" > $propertiesFile
+    fi
+    echo -e "$properties" >> $propertiesFile
+fi

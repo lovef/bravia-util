@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+source setup
+
+# https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
+
+configFile="$ip.accessconfig.json"
+if [[ ! -f "$configFile" ]]; then
+  echo "Writing new config file to $configFile"
+  # https://serverfault.com/a/799198/411664
+  uuid=$(od -x /dev/urandom | head -1 | awk '{OFS="-"; print $2$3,$4,$5,$6,$7$8$9}')
+  echo -n "{
+  method: 'actRegister',
+  id: 8,
+  version: '1.0',
+  params: [
+    {
+      clientid: '$ip:$uuid',
+      nickname: '$(hostname)',
+      level: 'private'
+    },
+    [{
+      value: 'yes',
+      function: 'WOL'
+    }]
+  ]
+}" > "$configFile"
+fi
+
+config=$(cat $configFile)
+
+cookie=$(curl "$ip/sony/accessControl" -i --silent --data "$config" | grep "Set-Cookie" | egrep -o "auth=.+")
+
+if [[ -z "$cookie" ]]; then
+  echo -n 'Code from the TV: '
+  read code
+  codeBase64=$(echo -n ":$code" | base64)
+  cookie=$(curl "$ip/sony/accessControl"  -i --silent --data "$config" --header "Authorization: Basic $codeBase64" | grep "Set-Cookie" | egrep -o "auth=.+")
+fi
