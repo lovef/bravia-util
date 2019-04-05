@@ -59,11 +59,11 @@ source access
 
 function executeCommand {
     echo "execute $1"
-    curl "$ip/sony/ircc" \
+    result=$(curl "$ip/sony/ircc" \
         --header 'SOAPACTION: "urn:schemas-sony-com:service:IRCC:1#X_SendIRCC"' \
         --cookie "$cookie" \
         --silent \
-        --fail \
+        --output /dev/null --write-out "%{http_code}" \
         --data '
             <s:Envelope
                 xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"
@@ -73,8 +73,12 @@ function executeCommand {
                         <IRCCCode>'"$1"'</IRCCCode>
                     </u:X_SendIRCC>
                 </s:Body>
-            </s:Envelope>' >/dev/null \
-            || { echo 'Could not execute command' ; exit 1; }
+            </s:Envelope>')
+            # || { echo 'Could not execute command' ; exit 1; }
+    if [[ $result -ne 200 ]]; then
+        echo 'Could not execute command'
+        exit 1
+    fi
 }
 
 if [ -n "$command" ]; then
@@ -139,6 +143,5 @@ while :; do
         down) executeCommand $down ;;
         left) executeCommand $left ;;
         right) executeCommand $right ;;
-        up) executeCommand $up ;;
     esac
 done
