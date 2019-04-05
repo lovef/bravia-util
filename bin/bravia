@@ -34,7 +34,7 @@ done
 cd "$(dirname "${BASH_SOURCE[0]}")/../libexec/bravia"
 
 # Commands: https://pro-bravia.sony.net/develop/integrate/ircc-ip/ircc-codes/index.html
-command=""
+commandList=()
 for (( i=0; i<${#expandedArgs[@]}; i++ )); do
     arg=${expandedArgs[$i]}
     case "$arg" in
@@ -49,6 +49,7 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
     *)
         list=$(./list) # Ensure list is read
         command=$(./list | egrep -m1 "^$arg *\=" | sed -E "s/[^=]+\= *//")
+        commandList+=($command)
         ;;
     esac
 done
@@ -81,8 +82,10 @@ function executeCommand {
     fi
 }
 
-if [ -n "$command" ]; then
-    executeCommand "$command"
+if [ ${#commandList[@]} -gt 0 ]; then
+    for command in "${commandList[@]}"; do
+        executeCommand $command
+    done
     exit 0
 fi
 
@@ -143,5 +146,6 @@ while :; do
         down) executeCommand $down ;;
         left) executeCommand $left ;;
         right) executeCommand $right ;;
+        *) echo "Unknown command: $key"
     esac
 done
