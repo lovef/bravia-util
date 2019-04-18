@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$0")"
+
+source setup
+
+function jsonString {
+  egrep -o -m1 '"'"$1"'" *: *"[^"]*"' | egrep -o -m1 '"[^"]*"$' | egrep -o -m1 '[^"]*'
+}
+
+inputs=$(curl --silent "$ip/sony/avContent" \
+    --data '{
+    "method": "getCurrentExternalInputsStatus",
+    "id": 105,
+    "params": [],
+    "version": "1.1"
+}' |  tr '{' '\n' | grep uri | grep '"connection":true')
+
+# printf $inputs
+
+while read -r input; do
+    label=$(echo -n "$input" | jsonString label)
+    title=$(echo -n "$input" | jsonString title)
+    uri=$(echo -n "$input" | jsonString uri)
+    echo "$label $title, to set as preset:"
+    echo "  bravia --input $uri"
+done <<< "$inputs"

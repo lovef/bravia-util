@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$0")"
+
+source access
+
+function jsonString {
+  egrep -o -m1 '"'"$1"'" *: *"[^"]*"' | egrep -o -m1 '"[^"]*"$' | egrep -o -m1 '[^"]*'
+}
+
+curl --silent "$ip/sony/avContent" \
+    --cookie "$cookie" \
+    --data '{
+    "method": "getPlayingContentInfo",
+    "id": 103,
+    "params": [],
+    "version": "1.0"
+}' | jsonString uri

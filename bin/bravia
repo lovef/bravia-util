@@ -11,9 +11,13 @@ Utility for controlling a Bravia TV via REST
 https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
 Based on https://github.com/alanreid/bravia
 
+Run without options to turn on and selecting preset input
+
 Options:
 
     -h, --help                      Show this help text
+    -i, --input                     List inputs
+    -i, --input <input URI>         Select preset input
     -l, --list                      List commands"
 }
 
@@ -32,6 +36,10 @@ do
 done
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../libexec/bravia"
+if [[ ! -d config ]]; then
+    echo create config dir
+    mkdir config
+fi
 
 # Commands: https://pro-bravia.sony.net/develop/integrate/ircc-ip/ircc-codes/index.html
 commandList=()
@@ -44,6 +52,17 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
         ;;
     -l|--list)
         ./list
+        exit 0
+        ;;
+    -i|--input)
+        i=$((i + 1))
+        uri="${expandedArgs[$i]}"
+        if [[ -z $uri ]]; then
+            ./input
+        else
+            echo "Preset $uri"
+            echo -n "$uri" > config/preset
+        fi
         exit 0
         ;;
     *)
@@ -89,6 +108,29 @@ if [ ${#commandList[@]} -gt 0 ]; then
     exit 0
 fi
 
+function currentInput {
+    curl --silent "$ip/sony/avContent" \
+        --cookie "$cookie" \
+        --data '{
+        "method": "getPlayingContentInfo",
+        "id": 103,
+        "params": [],
+        "version": "1.0"
+    }' | jsonString uri
+}
+
+function setCurrentInput {
+    echo "Set $1"
+    curl --silent "$ip/sony/avContent" \
+        --cookie "$cookie" \
+        --data '{
+        "method": "setPlayContent",
+        "id": 101,
+        "params": [{"uri": "'"$1"'"}],
+        "version": "1.0"
+    }' | jsonString uri
+}
+
 powerStatus=$(curl --silent "$ip/sony/system" \
     --data '{
     "method": "getPowerStatus",
@@ -100,6 +142,31 @@ powerStatus=$(curl --silent "$ip/sony/system" \
 if [[ $powerStatus != "active" ]]; then
     echo Wake up
     executeCommand AAAAAQAAAAEAAAAuAw
+    shouldExit=true
+    sleep 1
+fi
+
+if [[ -f "config/preset" ]]; then
+    preset=$(cat "config/preset")
+    input=$(currentInput)
+    if [[ "$preset" != "$input" ]]; then
+        setCurrentInput "$preset"
+        end=$((SECONDS+13))
+        while [ $SECONDS -lt $end ]; do
+            echo "monitor input..."
+            sleep 3
+            input=$(currentInput)
+            if [[ "$preset" != "$input" ]]; then
+                setCurrentInput "$preset"
+                exit 0
+            fi
+        done
+        shouldExit=true
+    fi
+fi
+
+if [ "$shouldExit" == true ]; then
+    exit 0
 fi
 
 list=$(./list) # Ensure list is read
