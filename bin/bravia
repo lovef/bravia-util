@@ -89,6 +89,18 @@ if [ ${#commandList[@]} -gt 0 ]; then
     exit 0
 fi
 
+powerStatus=$(curl --silent "$ip/sony/system" \
+    --data '{
+    "method": "getPowerStatus",
+    "id": 50,
+    "params": [],
+    "version": "1.0"
+}' | jsonString status)
+
+if [[ $powerStatus != "active" ]]; then
+    echo Wake up
+    executeCommand AAAAAQAAAAEAAAAuAw
+fi
 
 list=$(./list) # Ensure list is read
 echo "loading commands..."
