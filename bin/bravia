@@ -18,6 +18,7 @@ Options:
     -h, --help                      Show this help text
     -i, --input                     List inputs
     -i, --input <input URI>         Select preset input
+        --script                    User will not be promted for further input
     -l, --list                      List commands"
 }
 
@@ -65,6 +66,10 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
         fi
         exit 0
         ;;
+    --script)
+        echo "Script mode"
+        script=true
+        ;;
     *)
         list=$(./list) # Ensure list is read
         command=$(./list | egrep -m1 "^$arg *\=" | sed -E "s/[^=]+\= *//")
@@ -73,7 +78,7 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
     esac
 done
 
-source access
+source access $script
 
 # https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
 
@@ -166,6 +171,12 @@ if [[ -f "config/preset" ]]; then
 fi
 
 if [ "$shouldExit" == true ]; then
+    exit 0
+fi
+
+if [ "$script" == true ]; then
+    echo "Script mode, exit"
+    sleep 3
     exit 0
 fi
 
