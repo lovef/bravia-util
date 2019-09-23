@@ -18,6 +18,7 @@ Options:
     -h, --help                      Show this help text
     -i, --input                     List inputs
     -i, --input <input URI>         Select preset input
+    -t, --toggle                    Toggle to the preset input or turn off depending on current state
         --script                    User will not be promted for further input
     -l, --list                      List commands"
 }
@@ -65,6 +66,10 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
             echo -n "$uri" > config/preset
         fi
         exit 0
+        ;;
+    --toggle)
+        echo "Toggle mode"
+        toggle=true
         ;;
     --script)
         echo "Script mode"
@@ -144,10 +149,13 @@ powerStatus=$(curl --silent "$ip/sony/system" \
     "version": "1.0"
 }' | jsonString status)
 
+turnOff=$toggle
+
 if [[ $powerStatus != "active" ]]; then
     echo Wake up
     executeCommand AAAAAQAAAAEAAAAuAw
     shouldExit=true
+    turnOff=false
     sleep 1
 fi
 
@@ -167,7 +175,16 @@ if [[ -f "config/preset" ]]; then
             fi
         done
         shouldExit=true
+        turnOff=false
     fi
+fi
+
+if [ "$turnOff" == true ]; then
+    echo "Turn off..."
+    # Execute power off command twice since it often takes two tries
+    executeCommand AAAAAQAAAAEAAAAvAw==
+    executeCommand AAAAAQAAAAEAAAAvAw==
+    exit 0
 fi
 
 if [ "$shouldExit" == true ]; then
