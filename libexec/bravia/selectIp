@@ -1,35 +1,79 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 
-cd "$(dirname "$0")"
+import subprocess
+import re
+import urllib.request
+import json
+from pathlib import Path
 
-gateway=$(ipconfig | grep "Default Gateway" | egrep -o "([0-9]{1,3}\.){3}[0-9]{1,3}")
-ips=($(arp -a | grep dynamic | egrep -o "([0-9]{1,3}\.){3}[0-9]{1,3}" | egrep -v "^$gateway$"))
+ipPatternString = '([0-9]{1,3}\\.){3}[0-9]{1,3}'
 
-echo Gateway: $gateway
-echo Possible IPs
+def main():
+    arpLines = readArpTable()
 
-function jsonString {
-  egrep -o -m1 '"'"$1"'" *: *"[^"]*"' | egrep -o -m1 '"[^"]*"$' | egrep -o -m1 '[^"]*'
-}
+    selected = -1
+    for i, match in enumerate(arpLines):
+        (ip, mac) = match
+        sony = re.match("70[-:]26[-:]0?5", mac)
+        prefix = "Sony" if sony else ""
+        if sony:
+            selected = i
+        print(f'{i:2}: {prefix:5} {mac} {ip}')
 
-# index=0
-for index in "${!ips[@]}"; do
-  ip="${ips[$index]}"
-  echo -n "$index: $ip"
+    ipPattern = re.compile(ipPatternString)
+    ip = ""
+    while True:
+        if selected >= 0 and selected <= len(arpLines):
+            (ip, mac) = arpLines[selected]
+        if ipPattern.match(ip):
+            print(        "Selected          ", ip, getInfo(ip))
+        else:
+            print("No IP selected")
+        userInput = input("Select other (no): ")
+        if ipPattern.match(userInput):
+            ip = userInput
+            selected = -1
+        elif userInput:
+            ip = ""
+            try:
+                selected = int(userInput)
+            except:
+                selected = -1
+        else:
+            break
 
-  # https://pro-bravia.sony.net/develop/integrate/rest-api/spec/service/system/v1_0/getInterfaceInformation/index.html
-  data=$(curl --silent "$ip/sony/system" \
-    --data '{
-        "method": "getInterfaceInformation",
-        "id": 33,
-        "params": [],
-        "version": "1.0"
-    }')
-  echo -n " "$(echo "$data" | jsonString productName)
-  echo " "$(echo "$data" | jsonString modelName)
-done
+    if not ipPattern.match(ip):
+        raise NameError('Could not select IP')
 
-echo -n "Select: "
-read selectedIndex
-selected="${ips[$selectedIndex]}"
-echo -n $selected > .ip
+    print(f'Selected {ip}')
+    baseDir = Path(__file__).parent
+    ipFile = baseDir / 'config/ip'
+    print('Write to', ipFile)
+    ipFile.parent.mkdir(parents=True, exist_ok=True)
+    ipFile.write_text(ip)
+
+def readArpTable():
+    arp = subprocess.check_output("arp -a", shell=True).decode("utf-8")
+    arpMatches = re.findall('((\\d{1,3}\\.){3}\\d{1,3})\\D.*?(([\\da-fA-F]{1,2}[-:]){5}[\\da-fA-F]{1,2})', arp)
+    return list(map(
+        lambda m: (m[0], m[2]),
+        arpMatches))
+
+def getInfo(ip):
+    try:
+        data = {
+            "method": "getInterfaceInformation",
+            "id": 33,
+            "params": [],
+            "version": "1.0"
+        }
+        contents = urllib.request.urlopen(f"http://{ip}/sony/system", json.dumps(data).encode("utf-8")) \
+            .read()
+        result = json.loads(contents)['result'][0]
+        return f"{result['productName']} {result['modelName']}"
+    except:
+        return "Could not read server info"
+
+
+if __name__ == '__main__':
+    main()
