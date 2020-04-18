@@ -4,16 +4,8 @@ script="$1"
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-ip=$(cat config/ip | egrep -o "([0-9]{1,3}\.){3}[0-9]{1,3}")
-
-if [[ -z "$ip" ]]; then
-  if [ "$script" == true ]; then
-    echo "Script mode, cannot select IP"
-    exit 1
-  fi
-  ./selectIp
-  ip=$(cat config/ip | egrep -o "([0-9]{1,3}\.){3}[0-9]{1,3}")
-fi
+./setup.py "$script"
+ip=$(./config.py)
 
 function jsonString {
   egrep -o -m1 '"'"$1"'" *: *"[^"]*"' | egrep -o -m1 '"[^"]*"$' | egrep -o -m1 '[^"]*'

@@ -4,7 +4,7 @@ import subprocess
 import re
 import urllib.request
 import json
-from pathlib import Path
+import config
 
 ipPatternString = '([0-9]{1,3}\\.){3}[0-9]{1,3}'
 
@@ -46,11 +46,8 @@ def main():
         raise NameError('Could not select IP')
 
     print(f'Selected {ip}')
-    baseDir = Path(__file__).parent
-    ipFile = baseDir / 'config/ip'
-    print('Write to', ipFile)
-    ipFile.parent.mkdir(parents=True, exist_ok=True)
-    ipFile.write_text(ip)
+    config.writeIp(ip)
+    return ip
 
 def readArpTable():
     arp = subprocess.check_output("arp -a", shell=True).decode("utf-8")

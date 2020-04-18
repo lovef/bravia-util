@@ -2,3 +2,4 @@
 commands.properties
 alias.properties
 config/*
+__pycache__
