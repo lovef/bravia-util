@@ -10,7 +10,8 @@ def main(script):
         if script:
             raise NameError('Cannot select IP in script mode')
         ip = selectIp.main()
-    print(ip)
+    return ip
 
 if __name__ == '__main__':
-    main(len(sys.argv) > 1 and sys.argv[1] == 'true')
+    ip = main(len(sys.argv) > 1 and sys.argv[1] == 'true')
+    print(ip)
