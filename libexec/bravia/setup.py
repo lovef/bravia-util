@@ -3,6 +3,7 @@
 import config
 import selectIp
 import sys
+from common import printerr
 
 def main(script):
     ip = config.readIp()
@@ -14,4 +15,4 @@ def main(script):
 
 if __name__ == '__main__':
     ip = main(len(sys.argv) > 1 and sys.argv[1] == 'true')
-    print(ip)
+    printerr("setup", ip)
