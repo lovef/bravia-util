@@ -4,7 +4,6 @@ import config
 import setup
 import sys
 import urllib.request
-import http.client
 import json
 import secrets
 import uuid

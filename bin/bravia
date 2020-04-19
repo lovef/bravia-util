@@ -53,7 +53,7 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
         exit 0
         ;;
     -l|--list)
-        ./list
+        ./list.py
         exit 0
         ;;
     -i|--input)
@@ -76,8 +76,8 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
         script=true
         ;;
     *)
-        list=$(./list) # Ensure list is read
-        command=$(./list | egrep -m1 "^$arg *\=" | sed -E "s/[^=]+\= *//")
+        list=$(./list.py legacy) # Ensure list is read
+        command=$(./list.py legacy | egrep -m1 "^$arg *\=" | sed -E "s/[^=]+\= *//")
         commandList+=($command)
         ;;
     esac
@@ -197,15 +197,15 @@ if [ "$script" == true ]; then
     exit 0
 fi
 
-list=$(./list) # Ensure list is read
+list=$(./list.py legacy) # Ensure list is read
 echo "loading commands..."
-home=$(./list | egrep -m1 "^home *\=" | sed -E "s/[^=]+\= *//")
-enter=$(./list | egrep -m1 "^dpadCenter *\=" | sed -E "s/[^=]+\= *//")
-exit=$(./list | egrep -m1 "^exit *\=" | sed -E "s/[^=]+\= *//")
-up=$(./list | egrep -m1 "^up *\=" | sed -E "s/[^=]+\= *//")
-down=$(./list | egrep -m1 "^down *\=" | sed -E "s/[^=]+\= *//")
-left=$(./list | egrep -m1 "^left *\=" | sed -E "s/[^=]+\= *//")
-right=$(./list | egrep -m1 "^right *\=" | sed -E "s/[^=]+\= *//")
+home=$(./list.py legacy | egrep -m1 "^home *\=" | sed -E "s/[^=]+\= *//")
+enter=$(./list.py legacy | egrep -m1 "^dpadCenter *\=" | sed -E "s/[^=]+\= *//")
+exit=$(./list.py legacy | egrep -m1 "^exit *\=" | sed -E "s/[^=]+\= *//")
+up=$(./list.py legacy | egrep -m1 "^up *\=" | sed -E "s/[^=]+\= *//")
+down=$(./list.py legacy | egrep -m1 "^down *\=" | sed -E "s/[^=]+\= *//")
+left=$(./list.py legacy | egrep -m1 "^left *\=" | sed -E "s/[^=]+\= *//")
+right=$(./list.py legacy | egrep -m1 "^right *\=" | sed -E "s/[^=]+\= *//")
 echo "done"
 
 function readKey {
