@@ -67,7 +67,7 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
         fi
         exit 0
         ;;
-    --toggle)
+    -t|--toggle)
         echo "Toggle mode"
         toggle=true
         ;;

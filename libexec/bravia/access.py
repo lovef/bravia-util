@@ -10,6 +10,8 @@ import uuid
 import platform
 import datetime
 import base64
+import server
+from common import printerr
 
 def main(script):
     ip = setup.main(script)
@@ -19,25 +21,20 @@ def main(script):
 def getCookie(ip, script):
     # https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
     access = getAccessConfig(ip, script)
+    server.setup(ip)
     data = json.dumps(access).encode("utf-8")
     print(data)
 
     url = f"http://{ip}/sony/accessControl"
 
     try:
-        return requestCookie(url, data)
+        return server.requestCookie(url, data)
     except urllib.error.HTTPError as e:
-        print(e.code, e.reason)
+        printerr(e.code, e.reason)
         if e.code == 401:
             auth = getAuthHeader(script)
-            return requestCookie(url, data, auth)
+            return server.requestCookie(url, data, auth)
         raise e
-
-def requestCookie(url, data, auth = None):
-    headers = { "Authorization": auth } if auth is not None else {}
-    req = urllib.request.Request(url, data, headers)
-    response = urllib.request.urlopen(req)
-    return response.info()['Set-Cookie']
 
 def getAuthHeader(script):
     if script:
