@@ -2,10 +2,13 @@
 
 import json
 from pathlib import Path
+import re
 
 configDir = Path(__file__).parent / 'config'
 
 ipFile = configDir / 'ip'
+
+propertyPattern = re.compile("(^|\n) *([^#\s]+) *= *([^#\s]+)")
 
 def readIp():
     if ipFile.exists():
@@ -24,6 +27,21 @@ def writeAccessConfig(ip, accessConfig):
     data = json.dumps(accessConfig, indent=4)
     write(data, f'{ip}.accessconfig.json')
 
+def readAliases():
+    return readProperties('alias.properties')
+
+def readCommands():
+    return readProperties('commands.properties')
+
+def writeCommands(commands):
+    properties = write(commands, 'commands.properties')
+
+def readProperties(fileName):
+    properties = read(fileName)
+    if properties is None:
+        return {}
+    return {key: value for ignored, key, value in propertyPattern.findall(properties)}
+
 def read(fileName):
     configFile = configDir / fileName
     if configFile.exists():
@@ -31,7 +49,6 @@ def read(fileName):
 
 def write(data, fileName):
     configFile = configDir / fileName
-    print('Write', data, 'to', configFile)
     configFile.parent.mkdir(parents=True, exist_ok=True)
     configFile.write_text(data)
     return configFile
