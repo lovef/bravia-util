@@ -60,7 +60,7 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
         i=$((i + 1))
         uri="${expandedArgs[$i]}"
         if [[ -z $uri ]]; then
-            ./input
+            ./input.py
         else
             echo "Preset $uri"
             echo -n "$uri" > config/preset
