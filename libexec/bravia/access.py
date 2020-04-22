@@ -19,6 +19,15 @@ def main(script):
     return cookie
 
 def getCookie(ip, script):
+    cookie = config.readCookieCache(ip)
+    if cookie:
+        printerr("Use cached cookie")
+        return cookie
+    cookie = requestCookie(ip, script)
+    config.cacheCookie(ip, cookie)
+    return cookie
+
+def requestCookie(ip, script):
     # https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
     access = getAccessConfig(ip, script)
     server.setup(ip)
