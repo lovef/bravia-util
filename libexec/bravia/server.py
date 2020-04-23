@@ -15,7 +15,7 @@ def setup(script):
 def get(path, jsonData):
     data = json.dumps(jsonData).encode("utf-8")
     req = urllib.request.Request(f"http://{ip}/{path}", data)
-    response = sendRequest(req, path)
+    response = sendRequest(req, "GET " + path)
     return json.loads(response.read())
 
 def requestCookie(url, data, auth = None):
@@ -27,11 +27,11 @@ def requestCookie(url, data, auth = None):
 def sendRequest(request, log):
     done = False
     try:
-        printerr(log, end ="..")
+        printerr(log, end =" .. ")
         start = time.time()
         response = urllib.request.urlopen(request)
         done = True
         return response
     finally:
         end = time.time()
-        printerr("done" if done else "failed", "in", end - start)
+        printerr("done" if done else "failed", "in", end - start, prefix = None)

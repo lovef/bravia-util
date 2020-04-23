@@ -1,6 +1,11 @@
 import sys
 import datetime
 
-def printerr(*args, **kwargs):
-    now = datetime.datetime.now().isoformat(sep=' ', timespec='milliseconds')
-    print(now, *args, file=sys.stderr, **kwargs)
+def timestamp():
+    return datetime.datetime.now().isoformat(sep=' ', timespec='milliseconds')
+
+def printerr(*args, prefix = timestamp(), **kwargs):
+    if prefix is None:
+        print(*args, file=sys.stderr, **kwargs)
+    else:
+        print(prefix, *args, file=sys.stderr, **kwargs)

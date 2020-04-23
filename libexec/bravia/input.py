@@ -2,6 +2,7 @@
 
 import server
 import json
+from common import printerr
 
 class color:
     END       = '\33[0m'
