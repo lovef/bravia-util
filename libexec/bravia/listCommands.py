@@ -7,16 +7,21 @@ import shutil
 import math
 
 def main(legacy):
-    commands = config.readCommands()
-    if not commands:
-        saveCommands()
-        commands = config.readCommands()
+    commands = getCommands()
 
     if legacy:
         for command in commands:
             print(command, "=", commands[command])
     else:
         table(commands)
+
+
+def getCommands():
+    commands = config.readCommands()
+    if not commands:
+        saveCommands()
+        commands = config.readCommands()
+    return commands
 
 def table(commands):
     width = shutil.get_terminal_size((80, 20)).columns
@@ -36,7 +41,7 @@ def table(commands):
         print(line.rstrip())
 
 def saveCommands():
-    commands = getCommands()
+    commands = requestCommands()
     aliases = config.readAliases()
 
     propertiesText = ""
@@ -57,7 +62,7 @@ def saveCommands():
 
     config.writeCommands(propertiesText)
 
-def getCommands():
+def requestCommands():
     server.setup(False)
     response = server.get('sony/system', {
         "id": 20,
