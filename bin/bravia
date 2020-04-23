@@ -53,7 +53,7 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
         exit 0
         ;;
     -l|--list)
-        ./list.py
+        ./listCommands.py
         exit 0
         ;;
     -i|--input)
@@ -76,9 +76,7 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
         script=true
         ;;
     *)
-        list=$(./list.py legacy) # Ensure list is read
-        command=$(./list.py legacy | egrep -m1 "^$arg *\=" | sed -E "s/[^=]+\= *//")
-        commandList+=($command)
+        commandList+=($arg)
         ;;
     esac
 done
@@ -87,34 +85,8 @@ source access $script
 
 # https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
 
-function executeCommand {
-    echo "execute $1"
-    result=$(curl "$ip/sony/ircc" \
-        --header 'SOAPACTION: "urn:schemas-sony-com:service:IRCC:1#X_SendIRCC"' \
-        --cookie "$cookie" \
-        --silent \
-        --output /dev/null --write-out "%{http_code}" \
-        --data '
-            <s:Envelope
-                xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"
-                s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-                <s:Body>
-                    <u:X_SendIRCC xmlns:u="urn:schemas-sony-com:service:IRCC:1">
-                        <IRCCCode>'"$1"'</IRCCCode>
-                    </u:X_SendIRCC>
-                </s:Body>
-            </s:Envelope>')
-            # || { echo 'Could not execute command' ; exit 1; }
-    if [[ $result -ne 200 ]]; then
-        echo 'Could not execute command'
-        exit 1
-    fi
-}
-
 if [ ${#commandList[@]} -gt 0 ]; then
-    for command in "${commandList[@]}"; do
-        executeCommand $command
-    done
+    ./command.py "${commandList[@]}"
     exit 0
 fi
 
@@ -153,7 +125,7 @@ turnOff=$toggle
 
 if [[ $powerStatus != "active" ]]; then
     echo Wake up
-    executeCommand AAAAAQAAAAEAAAAuAw
+    ./command.py wakeUp
     shouldExit=true
     turnOff=false
     sleep 1
@@ -182,8 +154,7 @@ fi
 if [ "$turnOff" == true ]; then
     echo "Turn off..."
     # Execute power off command twice since it often takes two tries
-    executeCommand AAAAAQAAAAEAAAAvAw==
-    executeCommand AAAAAQAAAAEAAAAvAw==
+    ./command.py powerOff powerOff
     exit 0
 fi
 
@@ -197,16 +168,6 @@ if [ "$script" == true ]; then
     exit 0
 fi
 
-list=$(./list.py legacy) # Ensure list is read
-echo "loading commands..."
-home=$(./list.py legacy | egrep -m1 "^home *\=" | sed -E "s/[^=]+\= *//")
-enter=$(./list.py legacy | egrep -m1 "^dpadCenter *\=" | sed -E "s/[^=]+\= *//")
-exit=$(./list.py legacy | egrep -m1 "^exit *\=" | sed -E "s/[^=]+\= *//")
-up=$(./list.py legacy | egrep -m1 "^up *\=" | sed -E "s/[^=]+\= *//")
-down=$(./list.py legacy | egrep -m1 "^down *\=" | sed -E "s/[^=]+\= *//")
-left=$(./list.py legacy | egrep -m1 "^left *\=" | sed -E "s/[^=]+\= *//")
-right=$(./list.py legacy | egrep -m1 "^right *\=" | sed -E "s/[^=]+\= *//")
-echo "done"
 
 function readKey {
   allInput=""
@@ -242,17 +203,25 @@ function readKey {
 
 echo "Interactive mode. Press 'Q' to exit"
 
+home="home"
+enter="dpadCenter"
+exit="exit"
+up="up"
+down="down"
+left="left"
+right="right"
+
 while :; do
     key=$(readKey)
     case $key in
         q) exit;;
-        home) executeCommand $home ;;
-        enter) executeCommand $enter ;;
-        esc) executeCommand $exit ;;
-        up) executeCommand $up ;;
-        down) executeCommand $down ;;
-        left) executeCommand $left ;;
-        right) executeCommand $right ;;
+        home) ./command.py $home ;;
+        enter) ./command.py $enter ;;
+        esc) ./command.py $exit ;;
+        up) ./command.py $up ;;
+        down) ./command.py $down ;;
+        left) ./command.py $left ;;
+        right) ./command.py $right ;;
         *) echo "Unknown command: $key"
     esac
 done
