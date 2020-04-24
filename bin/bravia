@@ -91,35 +91,14 @@ if [ ${#commandList[@]} -gt 0 ]; then
 fi
 
 function currentInput {
-    curl --silent "$ip/sony/avContent" \
-        --cookie "$cookie" \
-        --data '{
-        "method": "getPlayingContentInfo",
-        "id": 103,
-        "params": [],
-        "version": "1.0"
-    }' | jsonString uri
+    ./server.py currentInput
 }
 
 function setCurrentInput {
-    echo "Set $1"
-    curl --silent "$ip/sony/avContent" \
-        --cookie "$cookie" \
-        --data '{
-        "method": "setPlayContent",
-        "id": 101,
-        "params": [{"uri": "'"$1"'"}],
-        "version": "1.0"
-    }' | jsonString uri
+    ./server.py currentInput "$1"
 }
 
-powerStatus=$(curl --silent "$ip/sony/system" \
-    --data '{
-    "method": "getPowerStatus",
-    "id": 50,
-    "params": [],
-    "version": "1.0"
-}' | jsonString status)
+powerStatus=$(./server.py powerStatus)
 
 turnOff=$toggle
 
