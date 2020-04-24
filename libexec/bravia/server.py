@@ -47,13 +47,13 @@ def requestCookie(url, data, auth = None):
     return response.info()['Set-Cookie']
 
 def sendRequest(request, log):
-    done = False
+    statusString = "failed"
     try:
         printerr(log, end =" .. ")
         start = time.time()
         response = urllib.request.urlopen(request)
-        done = True
+        statusString = f"{response.getcode()}"
         return response
     finally:
         end = time.time()
-        printerr("done" if done else "failed", "in", end - start, prefix = None)
+        printerr(statusString, f"in {end - start:.3f}", prefix = None)
