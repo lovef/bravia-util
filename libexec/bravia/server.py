@@ -5,24 +5,36 @@ import json
 import setup as setup_script
 import access
 import time
+import sys
 from common import printerr
 
 ip = None
 cookie = None
 
-def setup(script):
+def setup(script = False):
     global ip
-    ip = setup_script.main(script)
+    if ip is None:
+        ip = setup_script.main(script)
 
-def setupAccess(script):
+def setupAccess(script = False):
     setup(script)
     global cookie
-    cookie = access.main(script)
+    if cookie is None:
+        cookie = access.main(script)
 
-def get(path, jsonData):
+def get(path, jsonData, log = None):
+    setup()
     data = json.dumps(jsonData).encode("utf-8")
     req = urllib.request.Request(f"http://{ip}/{path}", data)
-    response = sendRequest(req, "GET " + path)
+    response = sendRequest(req, log if log else "GET " + path)
+    return json.loads(response.read())
+
+def getWithAuth(path, jsonData, log = None):
+    setupAccess()
+    data = json.dumps(jsonData).encode("utf-8")
+    headers = { "Cookie": cookie }
+    req = urllib.request.Request(f"http://{ip}/{path}", data, headers)
+    response = sendRequest(req, log if log else "GET with auth " + path)
     return json.loads(response.read())
 
 def command(command, code):
@@ -57,3 +69,31 @@ def sendRequest(request, log):
     finally:
         end = time.time()
         printerr(statusString, f"in {end - start:.3f}", prefix = None)
+
+if __name__ == '__main__':
+    command = sys.argv[1] if len(sys.argv) > 1 else None
+    if command == 'currentInput':
+        selected = sys.argv[2] if len(sys.argv) > 2 else None
+        if selected:
+            response = getWithAuth("sony/avContent", {
+                "method": "setPlayContent",
+                "id": 101,
+                "params": [{"uri": selected}],
+                "version": "1.0"
+            }, log = "Set current input")
+        else:
+            response = getWithAuth("sony/avContent", {
+                "method": "getPlayingContentInfo",
+                "id": 103,
+                "params": [],
+                "version": "1.0"
+            }, log = "Get current input")
+            print(response['result'][0]['uri'])
+    if command == 'powerStatus':
+        response = get("sony/system", {
+            "method": "getPowerStatus",
+            "id": 50,
+            "params": [],
+            "version": "1.0"
+        }, log = "Get power status")
+        print(response['result'][0]['status'])
