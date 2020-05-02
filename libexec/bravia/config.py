@@ -46,6 +46,9 @@ def readAliases():
 def readCommands():
     return readProperties('commands.properties')
 
+def readPreset():
+    return read('preset')
+
 def writeCommands(commands):
     properties = write(commands, 'commands.properties')
 
