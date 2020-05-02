@@ -69,7 +69,7 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
         ;;
     -t|--toggle)
         echo "Toggle mode"
-        toggle=true
+        toggle=toggle
         ;;
     --script)
         echo "Script mode"
@@ -81,63 +81,18 @@ for (( i=0; i<${#expandedArgs[@]}; i++ )); do
     esac
 done
 
+shouldExit=$(./power.py "$toggle")
+
+if [ "$shouldExit" == true ]; then
+    exit 0
+fi
+
 source access $script
 
 # https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
 
 if [ ${#commandList[@]} -gt 0 ]; then
     ./command.py "${commandList[@]}"
-    exit 0
-fi
-
-function currentInput {
-    ./server.py currentInput
-}
-
-function setCurrentInput {
-    ./server.py currentInput "$1"
-}
-
-powerStatus=$(./server.py powerStatus)
-
-turnOff=$toggle
-
-if [[ $powerStatus != "active" ]]; then
-    echo Wake up
-    ./command.py wakeUp
-    shouldExit=true
-    turnOff=false
-    sleep 1
-fi
-
-if [[ -f "config/preset" ]]; then
-    preset=$(cat "config/preset")
-    input=$(currentInput)
-    if [[ "$preset" != "$input" ]]; then
-        setCurrentInput "$preset"
-        end=$((SECONDS+13))
-        while [ $SECONDS -lt $end ]; do
-            echo "monitor input..."
-            sleep 3
-            input=$(currentInput)
-            if [[ "$preset" != "$input" ]]; then
-                setCurrentInput "$preset"
-                exit 0
-            fi
-        done
-        shouldExit=true
-        turnOff=false
-    fi
-fi
-
-if [ "$turnOff" == true ]; then
-    echo "Turn off..."
-    # Execute power off command twice since it often takes two tries
-    ./command.py powerOff powerOff
-    exit 0
-fi
-
-if [ "$shouldExit" == true ]; then
     exit 0
 fi
 

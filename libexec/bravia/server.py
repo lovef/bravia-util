@@ -22,11 +22,11 @@ def setupAccess(script = False):
     if cookie is None:
         cookie = access.main(script)
 
-def get(path, jsonData, log = None):
+def get(path, jsonData, log = None, timeout = None):
     setup()
     data = json.dumps(jsonData).encode("utf-8")
     req = urllib.request.Request(f"http://{ip}/{path}", data)
-    response = sendRequest(req, log if log else "GET " + path)
+    response = sendRequest(req, log if log else "GET " + path, timeout = timeout)
     return json.loads(response.read())
 
 def getWithAuth(path, jsonData, log = None):
@@ -38,6 +38,7 @@ def getWithAuth(path, jsonData, log = None):
     return json.loads(response.read())
 
 def command(command, code):
+    setupAccess()
     data = f"""<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
         <s:Body>
             <u:X_SendIRCC xmlns:u="urn:schemas-sony-com:service:IRCC:1">
@@ -58,42 +59,59 @@ def requestCookie(url, data, auth = None):
     response = sendRequest(req, "Request cookie")
     return response.info()['Set-Cookie']
 
-def sendRequest(request, log):
+def sendRequest(request, log, timeout = None):
     statusString = "failed"
     try:
-        printerr(log, end =" .. ")
+        printerr(log, end =" .. ", flush = True)
         start = time.time()
-        response = urllib.request.urlopen(request)
+        response = urllib.request.urlopen(request, timeout = timeout)
         statusString = f"{response.getcode()}"
         return response
+    except urllib.error.HTTPError as e:
+        statusString = f"{e.code}"
+        raise
     finally:
         end = time.time()
         printerr(statusString, f"in {end - start:.3f}", prefix = None)
 
-if __name__ == '__main__':
-    command = sys.argv[1] if len(sys.argv) > 1 else None
-    if command == 'currentInput':
-        selected = sys.argv[2] if len(sys.argv) > 2 else None
-        if selected:
-            response = getWithAuth("sony/avContent", {
-                "method": "setPlayContent",
-                "id": 101,
-                "params": [{"uri": selected}],
-                "version": "1.0"
-            }, log = "Set current input")
-        else:
-            response = getWithAuth("sony/avContent", {
-                "method": "getPlayingContentInfo",
-                "id": 103,
-                "params": [],
-                "version": "1.0"
-            }, log = "Get current input")
-            print(response['result'][0]['uri'])
-    if command == 'powerStatus':
+def currentInput(selected = None):
+    if selected:
+        response = getWithAuth("sony/avContent", {
+            "method": "setPlayContent",
+            "id": 101,
+            "params": [{"uri": selected}],
+            "version": "1.0"
+        }, log = "Set current input")
+    else:
+        response = getWithAuth("sony/avContent", {
+            "method": "getPlayingContentInfo",
+            "id": 103,
+            "params": [],
+            "version": "1.0"
+        }, log = "Get current input")
+        try:
+            return response['result'][0]['uri']
+        except:
+            return None
+
+def powerStatus():
+    try:
         response = get("sony/system", {
             "method": "getPowerStatus",
             "id": 50,
             "params": [],
             "version": "1.0"
-        }, log = "Get power status")
-        print(response['result'][0]['status'])
+        }, log = "Get power status", timeout = 1)
+        return response['result'][0]['status']
+    except:
+        return None
+
+
+
+if __name__ == '__main__':
+    command = sys.argv[1] if len(sys.argv) > 1 else None
+    if command == 'currentInput':
+        selected = sys.argv[2] if len(sys.argv) > 2 else None
+        currentInput(selected)
+    if command == 'powerStatus':
+        print(powerStatus())
