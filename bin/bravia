@@ -87,75 +87,10 @@ if [ "$shouldExit" == true ]; then
     exit 0
 fi
 
-source access $script
-
-# https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
-
-if [ ${#commandList[@]} -gt 0 ]; then
-    ./command.py "${commandList[@]}"
-    exit 0
-fi
-
 if [ "$script" == true ]; then
     echo "Script mode, exit"
     sleep 3
     exit 0
 fi
 
-
-function readKey {
-  allInput=""
-  while :; do
-    read -rsn1 input
-    if [[ $input == $'\e' ]]; then
-      read -rsn1 -t 0.001 input2 # get 1 more character
-      input+="$input2"
-    fi
-    if [[ -z "$input" ]]; then
-      echo enter
-      return
-    elif [[ ! -n "$allInput" && $input =~ [a-zA-Z0-9] ]]; then
-      echo $input
-      return
-    fi
-    allInput+=$input
-    case $allInput in
-      *[A) echo up; return ;;
-      *[B) echo down; return ;;
-      *[D) echo left; return ;;
-      *[C) echo right; return ;;
-      *[2~) echo insert; return ;;
-      *[1~) echo home; return ;;
-      *[5~) echo pgup; return ;;
-      *[3~) echo delete; return ;;
-      *[4~) echo end; return ;;
-      *[6~) echo pgdn; return ;;
-      *$'\e') echo esc; return ;;
-    esac
-  done
-}
-
-echo "Interactive mode. Press 'Q' to exit"
-
-home="home"
-enter="dpadCenter"
-exit="exit"
-up="up"
-down="down"
-left="left"
-right="right"
-
-while :; do
-    key=$(readKey)
-    case $key in
-        q) exit;;
-        home) ./command.py $home ;;
-        enter) ./command.py $enter ;;
-        esc) ./command.py $exit ;;
-        up) ./command.py $up ;;
-        down) ./command.py $down ;;
-        left) ./command.py $left ;;
-        right) ./command.py $right ;;
-        *) echo "Unknown command: $key"
-    esac
-done
+./interactive.py
