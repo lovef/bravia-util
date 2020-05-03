@@ -4,15 +4,26 @@ import listCommands
 import server
 import sys
 
-def main(commands):
+commandCodes = None
+
+def setup():
+    global commandCodes
     server.setupAccess(False)
-    commandCodes = listCommands.getCommands()
-    for command in commands:
-        if command in commandCodes:
-            code = commandCodes[command] if command in commandCodes else None
-            server.command(command, code)
-        else:
-            print(command, "Command not found")
+    if not commandCodes:
+        commandCodes = listCommands.getCommands()
+
+def command(command):
+    setup()
+    if command in commandCodes:
+        code = commandCodes[command] if command in commandCodes else None
+        server.command(command, code)
+    else:
+        print(command, "Command not found")
+
+def main(commands):
+    setup()
+    for c in commands:
+        command(c)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
