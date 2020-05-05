@@ -37,7 +37,7 @@ do
     shift
 done
 
-cd "$(dirname "${BASH_SOURCE[0]}")/../libexec/bravia"
+cd "$(dirname "${BASH_SOURCE[0]}")/lib/bravia"
 if [[ ! -d config ]]; then
     echo create config dir
     mkdir config

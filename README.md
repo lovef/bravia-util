@@ -9,7 +9,7 @@ Tested on git bash for windows
 # Installation
 
 ```bash
-mkdir -p ~/bin && cp bin/bravia ~/bin && mkdir -p ~/libexec/bravia && cp -r libexec/bravia/* ~/libexec/bravia
+mkdir -p ~/bin && cp bin/bravia ~/bin && mkdir -p ~/bin/lib/bravia && cp -r bin/lib/bravia/* ~/bin/lib/bravia
 ```
 
 and add `~/bin` to PATH
