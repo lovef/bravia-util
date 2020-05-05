@@ -3,7 +3,6 @@
 import json
 from pathlib import Path
 import re
-import time
 
 configDir = Path(__file__).parent / 'config'
 
@@ -21,24 +20,12 @@ def writeIp(ip):
     ipFile.write_text(ip)
 
 def readAccessConfig(ip):
-    data = read(f'{ip}.accessconfig.json')
+    data = read(f'{ip}.access.json')
     return json.loads(data) if data is not None else None
 
 def writeAccessConfig(ip, accessConfig):
     data = json.dumps(accessConfig, indent=4)
-    write(data, f'{ip}.accessconfig.json')
-
-def readCookieCache(ip):
-    data = read(f'{ip}.cookie.json')
-    if data:
-        parsed = json.loads(data)
-        if parsed['bestBefore'] > time.time():
-            return parsed['cookie']
-
-def cacheCookie(ip, cookie):
-    maxAge = int(re.search('Max-Age=(\d+)', cookie).group(1))
-    data = json.dumps({'cookie': cookie, 'bestBefore': maxAge - 3 * 60 * 60 + time.time()}, indent=4)
-    write(data, f'{ip}.cookie.json')
+    write(data, f'{ip}.access.json')
 
 def readAliases():
     return readProperties('alias.properties')

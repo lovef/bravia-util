@@ -2,10 +2,12 @@
 
 import sys
 import keyboard
+import server
 import command
 from common import printerr
 
 def main():
+    server.setupAccess()
     print("Interactive mode")
     print("Press Escape or Q to exit")
     keyBoard = keyboard.KeyBoard()
@@ -17,6 +19,8 @@ def main():
         'home': 'home',
         'enter': 'dpadCenter',
         'backspace': 'exit',
+        '-': 'volumeDown',
+        '+': 'volumeUp',
         '1': 'hdmi1',
         '2': 'hdmi2',
         '3': 'hdmi3',
