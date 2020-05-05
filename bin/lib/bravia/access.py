@@ -3,12 +3,14 @@
 import config
 import setup
 import sys
+import re
+import time
+from datetime import datetime
 import urllib.request
 import json
 import secrets
 import uuid
 import platform
-import datetime
 import base64
 import server
 from common import printerr
@@ -19,19 +21,30 @@ def main(script):
     return cookie
 
 def getCookie(ip, script):
-    cookie = config.readCookieCache(ip)
-    if cookie:
-        printerr("Use cached cookie")
-        return cookie
-    cookie = requestCookie(ip, script)
-    config.cacheCookie(ip, cookie)
+    access = getAccessConfig(ip, script)
+    try:
+        cookie = access["cookie"]
+        bestBefore = datetime.fromisoformat(cookie["bestBefore"])
+        if bestBefore > datetime.now():
+            printerr("Use cached cookie for", access["name"])
+            return cookie["data"]
+    except:
+        pass
+    cookie = requestCookie(ip, access, script)
+    maxAge = int(re.search('Max-Age=(\d+)', cookie).group(1))
+    bestBefore = maxAge - 3 * 60 * 60 + time.time()
+
+    access["cookie"] = {
+        "data": cookie,
+        "bestBefore": datetime.fromtimestamp(bestBefore).isoformat(sep=' ')
+    }
+    config.writeAccessConfig(ip, access)
     return cookie
 
-def requestCookie(ip, script):
+def requestCookie(ip, access, script):
     # https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
-    access = getAccessConfig(ip, script)
     server.setup(ip)
-    data = json.dumps(access).encode("utf-8")
+    data = json.dumps(access["identity"]).encode("utf-8")
     print(data)
 
     url = f"http://{ip}/sony/accessControl"
@@ -63,22 +76,26 @@ def getAccessConfig(ip, script):
 def setupAccess(ip):
     uuidString = str(uuid.UUID(bytes=secrets.token_bytes(16)))
     host = platform.node()
-    date = datetime.datetime.now().date().isoformat()
-    accessConfig = {
-        "method": "actRegister",
-        "id": 8,
-        "version": "1.0",
-        "params": [
-            {
-                "clientid": f"{ip}:{uuidString}",
-                "nickname": f"{host}-{date}",
-                "level": "private"
-            },
-            [{"value": "yes", "function": "WOL"}]
-        ]
+    date = datetime.now().isoformat(sep=' ', timespec='minutes')
+    name = f"{host} {date}"
+    access = {
+        "name": name,
+        "identity": {
+            "method": "actRegister",
+            "id": 8,
+            "version": "1.0",
+            "params": [
+                {
+                    "clientid": f"{ip}:{uuidString}",
+                    "nickname": name,
+                    "level": "private"
+                },
+                [{"value": "yes", "function": "WOL"}]
+            ]
+        }
     }
-    config.writeAccessConfig(ip, accessConfig)
-    return accessConfig
+    config.writeAccessConfig(ip, access)
+    return access
 
 if __name__ == '__main__':
     cookie = main(len(sys.argv) > 1 and sys.argv[1] == 'true')
