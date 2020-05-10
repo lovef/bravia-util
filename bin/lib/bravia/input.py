@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
-
-import server
 import json
-from common import printerr
+
+from . import server
+from . import config
+from .common import printerr
 
 class color:
     END       = '\33[0m'
@@ -50,8 +50,12 @@ class color:
         BRIGHT_CYAN   = '\33[106m'
         BRIGHT_WHITE  = '\33[107m'
 
-def main():
-    server.setup(False)
+def setPreset(preset):
+    print("set preset", preset)
+    config.writePreset(preset)
+
+def listInputs():
+    server.setup()
     response = server.get('sony/avContent', {
         "method": "getCurrentExternalInputsStatus",
         "id": 105,
@@ -73,5 +77,5 @@ def main():
 
         print(f"  {activeStr}bravia --input {quotedUri:50} # {label:2} {title} {color.END}")
 
-if __name__ == '__main__':
-    main()
+    print("Current preset")
+    print(config.readPreset())

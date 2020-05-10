@@ -1,14 +1,24 @@
-#!/usr/bin/env python3
-
 import json
 from pathlib import Path
 import re
+
+script = False
 
 configDir = Path(__file__).parent / 'config'
 
 ipFile = configDir / 'ip'
 
 propertyPattern = re.compile("(^|\n) *([^#\s]+) *= *([^#\s]+)")
+
+def setScript():
+    global script
+    script = True
+
+
+def getScript():
+    global script
+    return script
+
 
 def readIp():
     if ipFile.exists():
@@ -36,6 +46,9 @@ def readCommands():
 def readPreset():
     return read('preset')
 
+def writePreset(preset):
+    return write(preset, 'preset')
+
 def writeCommands(commands):
     properties = write(commands, 'commands.properties')
 
@@ -55,6 +68,3 @@ def write(data, fileName):
     configFile.parent.mkdir(parents=True, exist_ok=True)
     configFile.write_text(data)
     return configFile
-
-if __name__ == '__main__':
-    print(readIp())

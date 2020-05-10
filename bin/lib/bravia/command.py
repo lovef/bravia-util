@@ -1,14 +1,13 @@
-#!/usr/bin/env python3
-
-import listCommands
-import server
 import sys
+
+from . import listCommands
+from . import server
 
 commandCodes = None
 
 def setup():
     global commandCodes
-    server.setupAccess(False)
+    server.setupAccess()
     if not commandCodes:
         commandCodes = listCommands.getCommands()
 
@@ -24,6 +23,3 @@ def main(commands):
     setup()
     for c in commands:
         command(c)
-
-if __name__ == '__main__':
-    main(sys.argv[1:])

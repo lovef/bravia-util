@@ -1,26 +1,27 @@
-#!/usr/bin/env python3
-
 import urllib.request
 import json
-import setup as setup_script
-import access
 import time
 import sys
-from common import printerr
+
+from . import setup as setup_script
+from . import access
+from .common import printerr
 
 ip = None
 cookie = None
 
-def setup(script = False):
+def setup(newIp = None):
     global ip
-    if ip is None:
-        ip = setup_script.main(script)
+    if newIp:
+        ip = newIp
+    elif ip is None:
+        ip = setup_script.main()
 
-def setupAccess(script = False):
-    setup(script)
+def setupAccess():
+    setup()
     global cookie
     if cookie is None:
-        cookie = access.main(script)
+        cookie = access.main()
 
 def get(path, jsonData, log = None, timeout = None):
     setup()
@@ -105,13 +106,3 @@ def powerStatus():
         return response['result'][0]['status']
     except:
         return None
-
-
-
-if __name__ == '__main__':
-    command = sys.argv[1] if len(sys.argv) > 1 else None
-    if command == 'currentInput':
-        selected = sys.argv[2] if len(sys.argv) > 2 else None
-        currentInput(selected)
-    if command == 'powerStatus':
-        print(powerStatus())

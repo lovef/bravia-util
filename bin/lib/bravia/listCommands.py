@@ -1,19 +1,13 @@
-#!/usr/bin/env python3
-
 import sys
-import server
-import config
 import shutil
 import math
 
-def main(legacy):
-    commands = getCommands()
+from . import server
+from . import config
 
-    if legacy:
-        for command in commands:
-            print(command, "=", commands[command])
-    else:
-        table(commands)
+def main():
+    commands = getCommands()
+    table(commands)
 
 
 def getCommands():
@@ -76,6 +70,3 @@ def requestCommands():
 
 def decapitalize(string):
     return string[0].lower() + string[1:]
-
-if __name__ == '__main__':
-    main(len(sys.argv) > 1 and sys.argv[1] == 'legacy')
