@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-
-import config
-import setup
 import sys
 import re
 import time
@@ -12,16 +8,19 @@ import secrets
 import uuid
 import platform
 import base64
-import server
-from common import printerr
 
-def main(script):
-    ip = setup.main(script)
-    cookie = getCookie(ip, script)
+from . import config
+from . import setup
+from . import server
+from .common import printerr
+
+def main():
+    ip = setup.main()
+    cookie = getCookie(ip)
     return cookie
 
-def getCookie(ip, script):
-    access = getAccessConfig(ip, script)
+def getCookie(ip):
+    access = getAccessConfig(ip)
     try:
         cookie = access["cookie"]
         bestBefore = datetime.fromisoformat(cookie["bestBefore"])
@@ -30,7 +29,7 @@ def getCookie(ip, script):
             return cookie["data"]
     except:
         pass
-    cookie = requestCookie(ip, access, script)
+    cookie = requestCookie(ip, access)
     maxAge = int(re.search('Max-Age=(\d+)', cookie).group(1))
     bestBefore = maxAge - 3 * 60 * 60 + time.time()
 
@@ -41,7 +40,7 @@ def getCookie(ip, script):
     config.writeAccessConfig(ip, access)
     return cookie
 
-def requestCookie(ip, access, script):
+def requestCookie(ip, access):
     # https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
     server.setup(ip)
     data = json.dumps(access["identity"]).encode("utf-8")
@@ -54,22 +53,22 @@ def requestCookie(ip, access, script):
     except urllib.error.HTTPError as e:
         printerr(e.code, e.reason)
         if e.code == 401:
-            auth = getAuthHeader(script)
+            auth = getAuthHeader()
             return server.requestCookie(url, data, auth)
         raise e
 
-def getAuthHeader(script):
-    if script:
-        raise NameError('Cannot setup acces in script mode')
+def getAuthHeader():
+    if config.getScript():
+        raise NameError('Cannot setup access in script mode')
     code = input("Code from the TV: ")
     codeBase64 = base64.b64encode(f":{code}".encode('UTF-8')).decode()
     return f"Basic {codeBase64}"
 
-def getAccessConfig(ip, script):
+def getAccessConfig(ip):
     access = config.readAccessConfig(ip)
     if access is None:
-        if script:
-            raise NameError('Cannot setup acces in script mode')
+        if config.getScript():
+            raise NameError('Cannot setup access in script mode')
         access = setupAccess(ip)
     return access
 
@@ -96,7 +95,3 @@ def setupAccess(ip):
     }
     config.writeAccessConfig(ip, access)
     return access
-
-if __name__ == '__main__':
-    cookie = main(len(sys.argv) > 1 and sys.argv[1] == 'true')
-    print(cookie)

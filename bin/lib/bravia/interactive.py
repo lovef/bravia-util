@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
-
 import sys
-import keyboard
-import server
-import command
-from common import printerr
+
+from . import keyboard
+from . import server
+from . import command
+from .common import printerr
 
 def main():
     server.setupAccess()
@@ -31,11 +30,7 @@ def main():
         sys.stdout.write("\033[K")
         print(f'Pressed {c}', end = "\r")
         if c == 'escape' or c == 'q':
+            print()
             return
         if c in commandTable:
             command.command(commandTable[c])
-
-
-if __name__ == '__main__':
-    main()
-    print()

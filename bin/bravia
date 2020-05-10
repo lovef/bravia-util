@@ -1,96 +1,61 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 
-function usage {
-    echo "usage: bravia [<options>] [command]"
-}
+import argparse
+import lib.bravia.interactive
+import lib.bravia.input
+import lib.bravia.power
+import lib.bravia.listCommands
+import lib.bravia.config
 
-function help {
-    usage
-    echo "
-Utility for controlling a Bravia TV via REST
+helpText = """Utility for controlling a Bravia TV via REST
 https://pro-bravia.sony.net/develop/integrate/rest-api/spec/index.html
 Based on https://github.com/alanreid/bravia
 
-Run without options to turn on and selecting preset input
+Run without options to turn on and selecting preset input"""
 
-Options:
 
-    -h, --help                      Show this help text
-    -i, --input                     List inputs
-    -i, --input <input URI>         Select preset input
-    -t, --toggle                    Toggle to the preset input or turn off depending on current state
-        --script                    User will not be promted for further input
-    -l, --list                      List commands"
-}
+def parseArguments():
+    parser = argparse.ArgumentParser(
+        description=helpText, formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("-i", "--input", nargs='?', default=False, const=True,
+                        help="List input, or set specified input")
+    parser.add_argument("-t", "--toggle", action="store_true",
+                        help="Toggle to the preset input or turn off depending on current state")
+    parser.add_argument("-l", "--list", action="store_true",
+                        help="List commands")
+    parser.add_argument("--script", action="store_true",
+                        help="User will not be promted for further input")
 
-expandedArgs=()
-while test $# != 0
-do
-    arg="$1"
-    if [[ "$arg" =~ ^-[a-z]{2,}$ ]]; then
-        for (( i=1; i<${#arg}; i++ )); do
-            expandedArgs+=("-${arg:$i:1}")
-        done
-    else
-        expandedArgs+=("$arg")
-    fi
-    shift
-done
+    return parser.parse_args()
 
-cd "$(dirname "${BASH_SOURCE[0]}")/lib/bravia"
-if [[ ! -d config ]]; then
-    echo create config dir
-    mkdir config
-fi
+def main():
+    args = parseArguments()
 
-# Commands: https://pro-bravia.sony.net/develop/integrate/ircc-ip/ircc-codes/index.html
-commandList=()
-for (( i=0; i<${#expandedArgs[@]}; i++ )); do
-    arg=${expandedArgs[$i]}
-    case "$arg" in
-    -h|--help)
-        help
-        exit 0
-        ;;
-    -l|--list)
-        ./listCommands.py
-        exit 0
-        ;;
-    -i|--input)
-        i=$((i + 1))
-        uri="${expandedArgs[$i]}"
-        if [[ -z $uri ]]; then
-            ./input.py
-        else
-            echo "Preset $uri"
-            echo -n "$uri" > config/preset
-        fi
-        exit 0
-        ;;
-    -t|--toggle)
-        echo "Toggle mode"
-        toggle=toggle
-        ;;
-    --script)
-        echo "Script mode"
-        script=true
-        ;;
-    *)
-        commandList+=($arg)
-        ;;
-    esac
-done
+    if args.script:
+        lib.bravia.config.setScript()
 
-shouldExit=$(./power.py "$toggle")
+    if args.input:
+        if type(args.input) is str:
+            lib.bravia.input.setPreset(args.input)
+        else:
+            lib.bravia.input.listInputs()
 
-if [ "$shouldExit" == true ]; then
-    exit 0
-fi
+    elif args.toggle:
+        lib.bravia.power.main(toggle=True)
 
-if [ "$script" == true ]; then
-    echo "Script mode, exit"
-    sleep 3
-    exit 0
-fi
+    elif args.list:
+        lib.bravia.listCommands.main()
 
-./interactive.py
+    else:
+        if lib.bravia.power.main(toggle=False):
+            return
+
+        if args.script:
+            print("Script mode, do nothing")
+            return
+
+        lib.bravia.interactive.main()
+
+
+if __name__ == '__main__':
+    main()

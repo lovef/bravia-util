@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-cd "$(dirname "${BASH_SOURCE[0]}")"
-
-script="$1"
-source setup "$script"
-cookie=$(./access.py "$script" | egrep -o "auth=.+")

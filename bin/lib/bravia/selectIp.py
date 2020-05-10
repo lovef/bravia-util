@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
-
 import subprocess
 import re
 import urllib.request
 import json
-import config
+
+from . import config
 
 ipPatternString = '([0-9]{1,3}\\.){3}[0-9]{1,3}'
 
@@ -70,7 +69,3 @@ def getInfo(ip):
         return f"{result['productName']} {result['modelName']}"
     except:
         return "Could not read server info"
-
-
-if __name__ == '__main__':
-    main()

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import sys
 
 # https://stackoverflow.com/a/510364/1020871
@@ -113,7 +111,3 @@ def main():
         print(f'Pressed {c}', end = "\r")
         if c == 'escape':
             return
-
-if __name__ == '__main__':
-    main()
-    print()
