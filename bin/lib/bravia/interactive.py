@@ -16,6 +16,7 @@ def main():
         'left': 'left',
         'right': 'right',
         'home': 'home',
+        'delete': 'tvPower',
         'enter': 'dpadCenter',
         'backspace': 'exit',
         '-': 'volumeDown',

@@ -4,6 +4,7 @@ import argparse
 import lib.bravia.interactive
 import lib.bravia.input
 import lib.bravia.power
+import lib.bravia.command
 import lib.bravia.listCommands
 import lib.bravia.config
 
@@ -17,6 +18,7 @@ Run without options to turn on and selecting preset input"""
 def parseArguments():
     parser = argparse.ArgumentParser(
         description=helpText, formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("commands", nargs='*', help="Commands to execute")
     parser.add_argument("-i", "--input", nargs='?', default=False, const=True,
                         help="List input, or set specified input")
     parser.add_argument("-t", "--toggle", action="store_true",
@@ -47,6 +49,10 @@ def main():
         lib.bravia.listCommands.main()
 
     else:
+        if args.commands:
+            lib.bravia.command.main(args.commands)
+            return
+
         if lib.bravia.power.main(toggle=False):
             return
 
