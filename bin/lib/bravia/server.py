@@ -6,6 +6,7 @@ import sys
 from . import setup as setup_script
 from . import access
 from .common import printerr
+from .common import color
 
 ip = None
 cookie = None
@@ -52,7 +53,7 @@ def command(command, code):
         "SOAPACTION": '"urn:schemas-sony-com:service:IRCC:1#X_SendIRCC"'
     }
     req = urllib.request.Request(f"http://{ip}/sony/ircc", data, headers, method="POST")
-    response = sendRequest(req, f"IRCC {command} {code}")
+    response = sendRequest(req, f"IRCC {color.BRIGHT_GREEN}{command} {color.GREY}{code}{color.END}")
 
 def requestCookie(url, data, auth = None):
     headers = { "Authorization": auth } if auth is not None else {}
