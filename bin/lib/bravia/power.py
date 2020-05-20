@@ -2,8 +2,10 @@ import sys
 
 from . import server
 from . import config
+from .common import printerr
 
 def main(toggle):
+    printerr("--- power ---")
     on = server.powerStatus() == "active"
     if not on:
         powerOn()
