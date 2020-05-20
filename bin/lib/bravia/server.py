@@ -24,7 +24,7 @@ def setupAccess():
     if cookie is None:
         cookie = access.main()
 
-def get(path, jsonData, log = None, timeout = None):
+def get(path, jsonData, log = None, timeout = 5):
     setup()
     data = json.dumps(jsonData).encode("utf-8")
     req = urllib.request.Request(f"http://{ip}/{path}", data)
@@ -61,7 +61,7 @@ def requestCookie(url, data, auth = None):
     response = sendRequest(req, "Request cookie")
     return response.info()['Set-Cookie']
 
-def sendRequest(request, log, timeout = None):
+def sendRequest(request, log, timeout = 5):
     statusString = "failed"
     try:
         printerr(log, end =" .. ", flush = True)
