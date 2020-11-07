@@ -4,7 +4,7 @@ import re
 
 script = False
 
-configDir = Path(__file__).parent / 'config'
+configDir = Path.home() / ".bravia"
 
 ipFile = configDir / 'ip'
 
