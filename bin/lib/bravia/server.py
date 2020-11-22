@@ -7,10 +7,11 @@ from . import setup as setup_script
 from . import access
 from .common import printerr
 from .common import color
+from .responseFormatter import formatResponse
+from .responseFormatter import pretty
 
 ip = None
 cookie = None
-
 
 def setup(newIp=None):
     global ip
@@ -18,7 +19,6 @@ def setup(newIp=None):
         ip = newIp
     elif ip is None:
         ip = setup_script.main()
-
 
 def setupAccess():
     setup()
@@ -30,18 +30,18 @@ def setupAccess():
 def get(path, jsonData, log=None, timeout=5):
     setup()
     data = json.dumps(jsonData).encode("utf-8")
-    req = urllib.request.Request(f"http://{ip}/{path}", data)
+    req = urllib.request.Request(f"http://{ip}/sony/{path}", data)
     response = sendRequest(req, log if log else "GET " + path, timeout=timeout)
-    return json.loads(response.read())
+    return formatResponse(response.read())
 
 
 def getWithAuth(path, jsonData, log=None):
     setupAccess()
     data = json.dumps(jsonData).encode("utf-8")
     headers = {"Cookie": cookie}
-    req = urllib.request.Request(f"http://{ip}/{path}", data, headers)
+    req = urllib.request.Request(f"http://{ip}/sony/{path}", data, headers)
     response = sendRequest(req, log if log else "GET with auth " + path)
-    return json.loads(response.read())
+    return formatResponse(response.read())
 
 
 def command(command, code):
@@ -88,14 +88,14 @@ def sendRequest(request, log, timeout=5):
 
 def currentInput(selected=None):
     if selected:
-        response = getWithAuth("sony/avContent", {
+        response = getWithAuth("avContent", {
             "method": "setPlayContent",
             "id": 101,
             "params": [{"uri": selected}],
             "version": "1.0"
         }, log="Set current input")
     else:
-        response = getWithAuth("sony/avContent", {
+        response = getWithAuth("avContent", {
             "method": "getPlayingContentInfo",
             "id": 103,
             "params": [],
@@ -109,7 +109,7 @@ def currentInput(selected=None):
 
 def powerStatus():
     try:
-        response = get("sony/system", {
+        response = get("system", {
             "method": "getPowerStatus",
             "id": 50,
             "params": [],
@@ -126,7 +126,7 @@ def turnOffScreen():
 
 def powerSavingMode(selected=None):
     if selected:
-        response = getWithAuth("sony/system", {
+        response = getWithAuth("system", {
             "method": "setPowerSavingMode",
             "id": 52,
             "params": [{"mode": selected}],
@@ -134,7 +134,7 @@ def powerSavingMode(selected=None):
         }, log=f"Set power saving mode {selected}")
         return
     try:
-        response = get("sony/system", {
+        response = get("system", {
             "method": "getPowerSavingMode",
             "id": 51,
             "params": [],
@@ -143,3 +143,289 @@ def powerSavingMode(selected=None):
         return response['result'][0]['mode']
     except:
         return None
+
+def getApplicationList():
+    return getWithAuth("appControl", {
+        "method": "getApplicationList",
+        "id": 60,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getApplicationStatusList():
+    return get("appControl", {
+        "method": "getApplicationStatusList",
+        "id": 55,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getContentCount():
+    return getWithAuth("avContent", {
+        "method": "getContentCount",
+        "id": 11,
+        "params": [{"source": "extInput:hdmi"}],
+        "version": "1.1"
+    })
+
+def getContentList():
+    return getWithAuth("avContent", {
+        "method": "getContentList",
+        "id": 88,
+        "params": [{
+            "stIdx": 0,
+            "cnt": 50,
+            "uri": "extInput:hdmi"
+        }],
+        "version": "1.5"
+    })
+
+def getCurrentExternalInputsStatus():
+    return getWithAuth("avContent", {
+        "method": "getCurrentExternalInputsStatus",
+        "id": 105,
+        "params": [],
+        "version": "1.1"
+    })
+
+def getCurrentTime():
+    return get("system", {
+        "method": "getCurrentTime",
+        "id": 51,
+        "params": [],
+        "version": "1.1"
+    })
+
+def getInterfaceInformation():
+    return get("system", {
+        "method": "getInterfaceInformation",
+        "id": 33,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getLEDIndicatorStatus():
+    return getWithAuth("system", {
+        "method": "getLEDIndicatorStatus",
+        "id": 45,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getNetworkSettings():
+    return getWithAuth("system", {
+        "method": "getNetworkSettings",
+        "id": 2,
+        "params": [{"netif": "eth0"}],
+        "version": "1.0"
+    })
+
+def getPlayingContentInfo():
+    return getWithAuth("avContent", {
+        "method": "getPlayingContentInfo",
+        "id": 103,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getPowerSavingMode():
+    return getWithAuth("system", {
+        "method": "getPowerSavingMode",
+        "id": 51,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getPowerStatus():
+    return get("system", {
+        "method": "getPowerStatus",
+        "id": 50,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getRemoteControllerInfo():
+    return get("system", {
+        "method": "getRemoteControllerInfo",
+        "id": 54,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getRemoteDeviceSettings():
+    return get("system", {
+        "method": "getRemoteDeviceSettings",
+        "id": 44,
+        "params": [{"target": "accessPermission"}],
+        "version": "1.0"
+    })
+
+def getSchemeList():
+    return get("avContent", {
+        "method": "getSchemeList",
+        "id": 1,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getSoundSettings():
+    return get("audio", {
+        "method": "getSoundSettings",
+        "id": 73,
+        "params": [{"target": "outputTerminal"}],
+        "version": "1.1"
+    })
+
+def getSourceList():
+    return get("avContent", {
+        "method": "getSourceList",
+        "id": 1,
+        "params": [{"scheme": "extInput"}],
+        "version": "1.0"
+    })
+
+def getSpeakerSettings():
+    return get("audio", {
+        "method": "getSpeakerSettings",
+        "id": 67,
+        "params": [{"target": ""}],
+        "version": "1.0"
+    })
+
+def getSupportedApiInfo():
+    return get("guide", {
+        "method": "getSupportedApiInfo",
+        "id": 5,
+        "params": [{"services": [
+            "system",
+            "avContent"
+        ]}],
+        "version": "1.0"
+    })
+
+def getSystemInformation():
+    return getWithAuth("system", {
+        "method": "getSystemInformation",
+        "id": 33,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getSystemSupportedFunction():
+    return get("system", {
+        "method": "getSystemSupportedFunction",
+        "id": 55,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getTextForm():
+    return getWithAuth("appControl", {
+        "method": "getTextForm",
+        "id": 60,
+        "params": [{}],
+        "version": "1.1"
+    })
+
+def getVolumeInformation():
+    return get("audio", {
+        "method": "getVolumeInformation",
+        "id": 33,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getWebAppStatus():
+    return getWithAuth("appControl", {
+        "method": "getWebAppStatus",
+        "id": 1,
+        "params": [],
+        "version": "1.0"
+    })
+
+def getWolMode():
+    return getWithAuth("system", {
+        "method": "getWolMode",
+        "id": 50,
+        "params": [],
+        "version": "1.0"
+    })
+
+def requestReboot():
+    return getWithAuth("system", {
+        "method": "requestReboot",
+        "id": 10,
+        "params": [],
+        "version": "1.0"
+    })
+
+def setActiveApp(uri):
+    return getWithAuth("appControl", {
+        "method": "setActiveApp",
+        "id": 601,
+        "params": [{
+            "uri": uri
+        }],
+        "version": "1.0"
+    })
+
+def setAudioMute(mute=True):
+    return getWithAuth("audio", {
+        "method": "setAudioMute",
+        "id": 601,
+        "params": [{"status": mute}],
+        "version": "1.0"
+    })
+
+def setAudioVolume(volume, target="", ui=None):
+    return getWithAuth("audio", {
+        "method": "setAudioVolume",
+        "id": 98,
+        "params": [{
+            "volume": f"{volume}",
+            "ui": ui,
+            "target": target
+        }],
+        "version": "1.2"
+    })
+
+def setLEDIndicatorStatus(mode="Dark", status="true"):
+    return getWithAuth("system", {
+        "method": "setLEDIndicatorStatus",
+        "id": 53,
+        "params": [{
+            "mode": mode,
+            "status": status
+        }],
+        "version": "1.1"
+    })
+
+def setSoundSettings(value="audioSystem"):
+    return getWithAuth("audio", {
+        "method": "setSoundSettings",
+        "id": 5,
+        "params": [{"settings": [{
+            "value": value,
+            "target": "outputTerminal"
+        }]}],
+        "version": "1.1"
+    })
+
+def setTextForm(text, encKey=""):
+    return getWithAuth("appControl", {
+        "method": "setTextForm",
+        "id": 601,
+        "params": [{
+            "encKey": encKey,
+            "text": text
+        }],
+        "version": "1.1"
+    })
+
+def terminateApps():
+    return getWithAuth("appControl", {
+        "method": "terminateApps",
+        "id": 55,
+        "params": [],
+        "version": "1.0"
+    })
