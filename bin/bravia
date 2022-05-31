@@ -6,6 +6,7 @@ import lib.bravia.input
 import lib.bravia.power
 import lib.bravia.command
 import lib.bravia.listCommands
+import lib.bravia.server
 import lib.bravia.config
 
 helpText = """Utility for controlling a Bravia TV via REST
@@ -27,6 +28,8 @@ def parseArguments():
                         help="List commands")
     parser.add_argument("--script", action="store_true",
                         help="User will not be promted for further input")
+    parser.add_argument("--reboot", action="store_true",
+                        help="Request reboot")
 
     return parser.parse_args()
 
@@ -47,6 +50,9 @@ def main():
 
     elif args.list:
         lib.bravia.listCommands.main()
+
+    elif args.reboot:
+        lib.bravia.server.requestReboot()
 
     else:
         if args.commands:
